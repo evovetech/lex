@@ -25,7 +25,7 @@ func (t *Token) IsDone() bool {
 }
 
 func (t Token) String() string {
-	return fmt.Sprintf("<%s>{val=%s}", t.kind, t.val)
+	return fmt.Sprintf("<%s>%s", t.kind, t.val)
 }
 
 type TokenBuf struct {

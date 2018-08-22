@@ -11,7 +11,7 @@ type Scanner interface {
 }
 
 func NewScanner(rd io.Reader) Scanner {
-	name := "file"
+	name := "src"
 	sc := &scanner{
 		rd:  bufio.NewReader(rd),
 		pk:  new(ch),

@@ -1,5 +1,7 @@
 package token
 
+import "fmt"
+
 type Value struct {
 	raw      []rune
 	beg, end Position
@@ -25,7 +27,7 @@ func (v Value) Error() error {
 
 func (v Value) String() string {
 	if err := v.err; err != nil {
-		return err.Error()
+		return fmt.Sprintf("{err=%s}", err.Error())
 	}
-	return v.RawString()
+	return fmt.Sprintf("{raw=%s, pos=(%s -- %s)}", v.RawString(), v.beg, v.end)
 }
