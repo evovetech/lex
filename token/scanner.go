@@ -56,8 +56,7 @@ _:
 		}
 
 		// TODO:
-		val.raw = append(val.raw, r)
-		sc.read()
+		sc.append(r, val, &pos)
 		return UNKNOWN
 	}
 }
@@ -70,9 +69,7 @@ func (sc *scanner) scanIdent(val *Value, pos *Position) Token {
 		}
 
 		if r := ch.val; isIdent(r) {
-			*pos = sc.pos
-			val.raw = append(val.raw, r)
-			sc.read()
+			sc.append(r, val, pos)
 			continue
 		}
 		break
@@ -96,11 +93,15 @@ func (sc *scanner) scanComment(val *Value, pos *Position) Token {
 			break
 		}
 
-		*pos = sc.pos
-		val.raw = append(val.raw, ch.val)
-		sc.read()
+		sc.append(ch.val, val, pos)
 	}
 	return COMMENT
+}
+
+func (sc *scanner) append(r rune, val *Value, pos *Position) ch {
+	*pos = sc.pos
+	val.raw = append(val.raw, r)
+	return sc.read()
 }
 
 func (sc *scanner) eatSpace() {
