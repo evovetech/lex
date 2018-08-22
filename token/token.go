@@ -51,5 +51,6 @@ var tokenNames = [...]string{
 // keywordToken records the special tokens for
 // strings that should not be treated as ordinary identifiers.
 var keywordToken = map[string]Token{
-	"def": DEF,
+	"def":    DEF,
+	"extern": EXTERN,
 }
