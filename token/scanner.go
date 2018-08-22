@@ -45,6 +45,37 @@ _:
 
 	switch r := ch.val; r {
 
+	case '=':
+		sc.append(r, val, &pos)
+		return ASSIGN
+	case '+':
+		sc.append(r, val, &pos)
+		return PLUS
+	case '-':
+		sc.append(r, val, &pos)
+		return MINUS
+
+	case '<':
+		sc.append(r, val, &pos)
+		return LT
+	case '>':
+		sc.append(r, val, &pos)
+		return GT
+
+	case ',':
+		sc.append(r, val, &pos)
+		return COMMA
+	case ';':
+		sc.append(r, val, &pos)
+		return SEMICOLON
+
+	case '(':
+		sc.append(r, val, &pos)
+		return LPAREN
+	case ')':
+		sc.append(r, val, &pos)
+		return RPAREN
+
 	case '#':
 		return sc.scanComment(val, &pos)
 

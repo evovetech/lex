@@ -11,16 +11,30 @@ const (
 	// TODO:
 	UNKNOWN
 
-	// commands
-	DEF
-	EXTERN
-
-	// primary
+	// Identifier / Literal
 	IDENT
 	NUMBER
 
+	// Operators
+	ASSIGN
+	PLUS
+	MINUS
+
+	LT
+	GT
+
+	COMMA
+	SEMICOLON
+
+	LPAREN
+	RPAREN
+
 	// others
 	COMMENT
+
+	// keywords
+	DEF
+	EXTERN
 
 	maxToken
 )
@@ -40,12 +54,29 @@ func (tok Token) IsDone() bool {
 var tokenNames = [...]string{
 	ILLEGAL: "illegal token",
 	EOF:     "end of file",
+
 	UNKNOWN: "unknown",
-	DEF:     "def",
-	EXTERN:  "extern",
-	IDENT:   "identifier",
-	NUMBER:  "number",
+
+	IDENT:  "identifier",
+	NUMBER: "number",
+
+	ASSIGN: "assign",
+	PLUS:   "plus",
+	MINUS:  "minus",
+
+	LT: "less than",
+	GT: "greater than",
+
+	COMMA:     "comma",
+	SEMICOLON: "semi-colon",
+
+	LPAREN: "left parenthesis",
+	RPAREN: "right parenthesis",
+
 	COMMENT: "comment",
+
+	DEF:    "def",
+	EXTERN: "extern",
 }
 
 // keywordToken records the special tokens for
