@@ -13,8 +13,12 @@ func TestString(t *testing.T) {
 
 	fmt.Println("begin >>>")
 
+	i, max := 0, 10
 	for tok := lex.NextToken(); !tok.IsDone(); tok = lex.NextToken() {
 		fmt.Printf("  %s\n", tok)
+		if i++; i >= max {
+			break
+		}
 	}
 
 	fmt.Println("<<< end")

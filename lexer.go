@@ -21,7 +21,7 @@ func (t *Token) Value() token.Value {
 }
 
 func (t *Token) IsDone() bool {
-	return t.kind.IsDone()
+	return t.val.Error() != nil || t.kind.IsDone()
 }
 
 func (t Token) String() string {

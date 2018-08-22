@@ -27,7 +27,7 @@ func (v Value) Error() error {
 
 func (v Value) String() string {
 	if err := v.err; err != nil {
-		return fmt.Sprintf("{err=%s}", err.Error())
+		return fmt.Sprintf("{err='%s'}", err.Error())
 	}
-	return fmt.Sprintf("{raw=%s, pos=(%s -- %s)}", v.RawString(), v.beg, v.end)
+	return fmt.Sprintf("{'%s' [%s -- %s]}", v.RawString(), v.beg, v.end)
 }

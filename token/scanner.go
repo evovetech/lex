@@ -29,15 +29,19 @@ type scanner struct {
 }
 
 func (sc *scanner) NextToken(val *Value) Token {
-	var ch ch
-	var pos = sc.pos
-
-	// skip whitespace
+	var ch = sc.peek()
 	sc.eatSpace()
+
+	var pos = sc.pos
 
 	// start/end token
 	sc.startToken(val)
 	defer sc.endToken(val, &pos)
+
+	if err, tok := ch.error(); err {
+		val.err = ch.err
+		return tok
+	}
 
 _:
 	ch = sc.peek()
@@ -53,15 +57,16 @@ _:
 	}
 
 	// TODO:
+	val.raw = append(val.raw, r)
+	sc.read()
 	return ILLEGAL
 }
 
 func (sc *scanner) scanIdent(val *Value, pos *Position) Token {
 	for {
 		ch := sc.peek()
-		if err, tok := ch.error(); err {
-			val.err = ch.err
-			return tok
+		if err, _ := ch.error(); err {
+			break
 		}
 
 		if r := ch.val; isIdent(r) {
@@ -130,10 +135,12 @@ func (c *ch) error() (bool, Token) {
 	if c.err == nil {
 		return false, noneToken
 	}
-	if c.err == io.EOF {
+	switch c.err {
+	case io.EOF:
 		return true, EOF
+	default:
+		return true, ERROR
 	}
-	return true, ILLEGAL
 }
 
 func (c *ch) fill(rd *bufio.Reader) {

@@ -5,8 +5,10 @@ type Token uint8
 const (
 	noneToken Token = iota
 
-	ILLEGAL
+	ERROR
 	EOF
+	// TODO: move before EOF
+	ILLEGAL
 
 	// commands
 	DEF
