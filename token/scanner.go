@@ -42,20 +42,24 @@ _:
 	ch = sc.peek()
 	if err, tok := ch.error(); err {
 		val.err = ch.err
-		sc.read()
 		return tok
 	}
 
-	r := ch.val
-	switch {
-	case isIdentStart(r):
-		return sc.scanIdent(val, &pos)
-	}
+	switch r := ch.val; r {
 
-	// TODO:
-	val.raw = append(val.raw, r)
-	sc.read()
-	return UNKNOWN
+	case '#':
+		return sc.scanComment(val, &pos)
+
+	default:
+		if isIdentStart(r) {
+			return sc.scanIdent(val, &pos)
+		}
+
+		// TODO:
+		val.raw = append(val.raw, r)
+		sc.read()
+		return UNKNOWN
+	}
 }
 
 func (sc *scanner) scanIdent(val *Value, pos *Position) Token {
@@ -79,6 +83,24 @@ func (sc *scanner) scanIdent(val *Value, pos *Position) Token {
 	}
 
 	return IDENT
+}
+
+func (sc *scanner) scanComment(val *Value, pos *Position) Token {
+	for {
+		ch := sc.peek()
+		if err, _ := ch.error(); err {
+			break
+		}
+
+		if ch.isNewline() {
+			break
+		}
+
+		*pos = sc.pos
+		val.raw = append(val.raw, ch.val)
+		sc.read()
+	}
+	return COMMENT
 }
 
 func (sc *scanner) eatSpace() {

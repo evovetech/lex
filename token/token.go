@@ -19,6 +19,9 @@ const (
 	IDENT
 	NUMBER
 
+	// others
+	COMMENT
+
 	maxToken
 )
 
@@ -42,6 +45,7 @@ var tokenNames = [...]string{
 	EXTERN:  "extern",
 	IDENT:   "identifier",
 	NUMBER:  "number",
+	COMMENT: "comment",
 }
 
 // keywordToken records the special tokens for
