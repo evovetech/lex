@@ -5,10 +5,11 @@ type Token uint8
 const (
 	noneToken Token = iota
 
-	ERROR
-	EOF
-	// TODO: move before EOF
 	ILLEGAL
+	EOF
+
+	// TODO:
+	UNKNOWN
 
 	// commands
 	DEF
@@ -36,6 +37,7 @@ func (tok Token) IsDone() bool {
 var tokenNames = [...]string{
 	ILLEGAL: "illegal token",
 	EOF:     "end of file",
+	UNKNOWN: "unknown",
 	DEF:     "def",
 	EXTERN:  "extern",
 	IDENT:   "identifier",

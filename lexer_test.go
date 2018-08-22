@@ -23,9 +23,13 @@ fib(40)
 	fmt.Println("begin >>>")
 
 	i, max := 0, len(code)
-	for tok := lex.NextToken(); !tok.IsDone(); tok = lex.NextToken() {
+	for {
+		tok := lex.NextToken()
 		fmt.Printf("  %s\n", tok)
 		if i++; i >= max {
+			break
+		}
+		if tok.IsDone() {
 			break
 		}
 	}

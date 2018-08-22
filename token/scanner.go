@@ -30,11 +30,11 @@ type scanner struct {
 
 func (sc *scanner) NextToken(val *Value) Token {
 	var ch ch
-	var pos = sc.pos
 
 	sc.eatSpace()
 
 	// start/end token
+	var pos = sc.pos
 	sc.startToken(val)
 	defer sc.endToken(val, &pos)
 
@@ -42,6 +42,7 @@ _:
 	ch = sc.peek()
 	if err, tok := ch.error(); err {
 		val.err = ch.err
+		sc.read()
 		return tok
 	}
 
@@ -54,7 +55,7 @@ _:
 	// TODO:
 	val.raw = append(val.raw, r)
 	sc.read()
-	return ILLEGAL
+	return UNKNOWN
 }
 
 func (sc *scanner) scanIdent(val *Value, pos *Position) Token {
@@ -134,7 +135,7 @@ func (c *ch) error() (bool, Token) {
 	case io.EOF:
 		return true, EOF
 	default:
-		return true, ERROR
+		return true, ILLEGAL
 	}
 }
 
