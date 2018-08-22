@@ -13,10 +13,8 @@ func TestString(t *testing.T) {
 
 	fmt.Println("begin >>>")
 
-	tok := lex.NextToken()
-	for !tok.IsDone() {
+	for tok := lex.NextToken(); !tok.IsDone(); tok = lex.NextToken() {
 		fmt.Printf("  %s\n", tok)
-		tok = lex.NextToken()
 	}
 
 	fmt.Println("<<< end")
