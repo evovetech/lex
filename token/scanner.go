@@ -29,19 +29,14 @@ type scanner struct {
 }
 
 func (sc *scanner) NextToken(val *Value) Token {
-	var ch = sc.peek()
-	sc.eatSpace()
-
+	var ch ch
 	var pos = sc.pos
+
+	sc.eatSpace()
 
 	// start/end token
 	sc.startToken(val)
 	defer sc.endToken(val, &pos)
-
-	if err, tok := ch.error(); err {
-		val.err = ch.err
-		return tok
-	}
 
 _:
 	ch = sc.peek()
