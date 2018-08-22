@@ -51,6 +51,8 @@ _:
 	default:
 		if isIdentStart(r) {
 			return sc.scanIdent(val, &pos)
+		} else if isdigit(r) || r == '.' {
+			return sc.scanNumber(val, &pos)
 		}
 
 		// TODO:
@@ -94,6 +96,23 @@ func (sc *scanner) scanComment(val *Value, pos *Position) Token {
 		sc.append(ch.val, val, pos)
 	}
 	return COMMENT
+}
+
+func (sc *scanner) scanNumber(val *Value, pos *Position) Token {
+	for {
+		ch := sc.peek()
+		if err, _ := ch.error(); err {
+			break
+		}
+
+		r := ch.val
+		if isdigit(r) || r == '.' {
+			sc.append(r, val, pos)
+			continue
+		}
+		break
+	}
+	return NUMBER
 }
 
 func (sc *scanner) append(r rune, val *Value, pos *Position) ch {
