@@ -30,12 +30,10 @@ type scanner struct {
 
 func (sc *scanner) NextToken(val *Value) Token {
 	var ch ch
-
-	sc.eatSpace()
+	var pos Position
 
 	// start/end token
-	var pos = sc.pos
-	sc.startToken(val)
+	sc.startToken(val, &pos)
 	defer sc.endToken(val, &pos)
 
 _:
@@ -110,10 +108,14 @@ func (sc *scanner) eatSpace() {
 	}
 }
 
-func (sc *scanner) startToken(val *Value) {
+func (sc *scanner) startToken(val *Value, pos *Position) {
+	// eat space
+	sc.eatSpace()
+
 	val.raw = val.raw[0:0]
 	val.beg, val.end = sc.pos, sc.pos
 	val.err = nil
+	*pos = sc.pos
 }
 
 func (sc *scanner) endToken(val *Value, pos *Position) {
