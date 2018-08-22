@@ -49,14 +49,14 @@ _:
 	r := ch.val
 	switch {
 	case isIdentStart(r):
-		return sc.readIdent(val, &pos)
+		return sc.scanIdent(val, &pos)
 	}
 
 	// TODO:
 	return ILLEGAL
 }
 
-func (sc *scanner) readIdent(val *Value, pos *Position) Token {
+func (sc *scanner) scanIdent(val *Value, pos *Position) Token {
 	for {
 		ch := sc.peek()
 		if err, tok := ch.error(); err {
@@ -73,7 +73,10 @@ func (sc *scanner) readIdent(val *Value, pos *Position) Token {
 		break
 	}
 
-	// TODO: keywords
+	if k, ok := keywordToken[val.RawString()]; ok {
+		return k
+	}
+
 	return IDENT
 }
 
