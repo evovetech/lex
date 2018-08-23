@@ -1,23 +1,10 @@
 package ast
 
-import "github.com/evovetech/lex"
+import "fmt"
 
 // The base Node interface
 type Node interface {
-	Token() lex.Token
 	String() string
-}
-
-type node struct {
-	tok lex.Token
-}
-
-func (n *node) Token() lex.Token {
-	return n.tok
-}
-
-func (n *node) String() string {
-	return n.tok.String()
 }
 
 // All statement nodes implement this
@@ -26,9 +13,7 @@ type Statement interface {
 	statementNode()
 }
 
-type stmt struct {
-	node
-}
+type stmt struct{}
 
 func (s *stmt) statementNode() {}
 
@@ -38,9 +23,7 @@ type Expression interface {
 	expressionNode()
 }
 
-type expr struct {
-	node
-}
+type expr struct{}
 
 func (e *expr) expressionNode() {}
 
@@ -49,9 +32,17 @@ type NumberExpr struct {
 	Val float64
 }
 
+func (n *NumberExpr) String() string {
+	return fmt.Sprintf("%.3f", n.Val)
+}
+
 type VariableExpr struct {
 	expr
 	Name string
+}
+
+func (v *VariableExpr) String() string {
+	return v.Name
 }
 
 type BinaryExpr struct {
@@ -64,4 +55,17 @@ type CallExpr struct {
 	expr
 	Callee string
 	Args   []Expression
+}
+
+func (c *CallExpr) String() string {
+	first := true
+	var args string
+	for _, arg := range c.Args {
+		if !first {
+			args += ", "
+		}
+		first = false
+		args += arg.String()
+	}
+	return fmt.Sprintf("%s(%s)", c.Callee, args)
 }
