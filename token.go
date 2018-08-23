@@ -1,8 +1,7 @@
-package lexer
+package lex
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/evovetech/lex/token"
 )
@@ -31,24 +30,4 @@ func (t Token) String() string {
 type TokenBuf struct {
 	tok  []Token
 	r, w int32
-}
-
-type Lexer struct {
-	scan token.Scanner
-	tok  TokenBuf
-}
-
-func NewLexer(rd io.Reader) *Lexer {
-	return &Lexer{
-		scan: token.NewScanner(rd),
-		tok: TokenBuf{
-			tok: make([]Token, 1),
-		},
-	}
-}
-
-func (l *Lexer) NextToken() Token {
-	tok := l.tok.tok[0]
-	tok.kind = l.scan.NextToken(&tok.val)
-	return tok
 }
