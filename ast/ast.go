@@ -1,6 +1,9 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // The base Node interface
 type Node interface {
@@ -27,6 +30,16 @@ type expr struct{}
 
 func (e *expr) expressionNode() {}
 
+// TEMP
+type ErrorExpr struct {
+	expr
+	Err error
+}
+
+func (e *ErrorExpr) String() string {
+	return e.Err.Error()
+}
+
 type NumberExpr struct {
 	expr
 	Val float64
@@ -51,6 +64,11 @@ type BinaryExpr struct {
 	Left, Right Expression
 }
 
+func (b *BinaryExpr) String() string {
+	op := string(append([]rune{}, rune(b.Op)))
+	return fmt.Sprintf("(%s %s %s)", b.Left, op, b.Right)
+}
+
 type CallExpr struct {
 	expr
 	Callee string
@@ -58,14 +76,31 @@ type CallExpr struct {
 }
 
 func (c *CallExpr) String() string {
-	first := true
-	var args string
+	var exprs []string
 	for _, arg := range c.Args {
-		if !first {
-			args += ", "
-		}
-		first = false
-		args += arg.String()
+		exprs = append(exprs, arg.String())
 	}
+	args := strings.Join(exprs, ", ")
 	return fmt.Sprintf("%s(%s)", c.Callee, args)
+}
+
+type PrototypeExpr struct {
+	expr
+	Name string
+	Args []string
+}
+
+func (p *PrototypeExpr) String() string {
+	args := strings.Join(p.Args, ", ")
+	return fmt.Sprintf("%s(%s)", p.Name, args)
+}
+
+type FunctionExpr struct {
+	expr
+	Prototype PrototypeExpr
+	Body      Expression
+}
+
+func (f *FunctionExpr) String() string {
+	return fmt.Sprintf("%s %s", f.Prototype, f.Body)
 }

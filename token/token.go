@@ -12,7 +12,7 @@ const (
 	UNKNOWN
 
 	// Identifier / Literal
-	IDENT
+	IDENTIFIER
 	NUMBER
 
 	// Operators
@@ -57,8 +57,8 @@ var tokenNames = [...]string{
 
 	UNKNOWN: "unknown",
 
-	IDENT:  "identifier",
-	NUMBER: "number",
+	IDENTIFIER: "identifier",
+	NUMBER:     "number",
 
 	ASSIGN: "assign",
 	PLUS:   "plus",

@@ -110,7 +110,7 @@ func (sc *scanner) scanIdent(val *Value, pos *Position) Token {
 		return k
 	}
 
-	return IDENT
+	return IDENTIFIER
 }
 
 func (sc *scanner) scanComment(val *Value, pos *Position) Token {
