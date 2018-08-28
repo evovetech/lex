@@ -33,41 +33,51 @@ func (c *compiler) GetContext() llvm.Context {
 }
 
 func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
-	switch t := node.(type) {
+	switch e := node.(type) {
 	case *ast.NumberExpr:
-		val = c.float64(t.Val)
+		val = c.float64(e.Val)
 	case *ast.VariableExpr:
-		// Look this variable up in the function
-		var ok bool
-		if val, ok = c.namedValues[t.Name]; !ok {
-			err = fmt.Errorf("unknown variable name: %s", t.Name)
-		}
+		val, err = c.compileVariableExpr(e)
 	case *ast.BinaryExpr:
-		var lhs, rhs llvm.Value
-		if lhs, err = c.Compile(t.Left); err != nil {
-			break
-		}
-		if rhs, err = c.Compile(t.Right); err != nil {
-			break
-		}
-
-		// TODO: better switch
-		switch t.Op.Raw()[0] {
-		case '+':
-			val = c.builder.CreateFAdd(lhs, rhs, "addtmp")
-		case '-':
-			val = c.builder.CreateFSub(lhs, rhs, "subtmp")
-		case '*':
-			val = c.builder.CreateFMul(lhs, rhs, "multmp")
-		case '<':
-			boolVal := c.builder.CreateFCmp(llvm.FloatULT, lhs, rhs, "cmptmp")
-			// Convert bool 0/1 to double 0.0 or 1.0
-			val = c.builder.CreateUIToFP(boolVal, c.DoubleType(), "booltmp")
-		default:
-			err = fmt.Errorf("invalid binary operator: %s", t.Op)
-		}
+		val, err = c.compileBinaryExpr(e)
 	default:
 		err = fmt.Errorf("error compiling. node type not handled: %s", node)
+	}
+	return
+}
+
+func (c *compiler) compileVariableExpr(e *ast.VariableExpr) (val llvm.Value, err error) {
+	// Look this variable up in the function
+	var ok bool
+	if val, ok = c.namedValues[e.Name]; !ok {
+		err = fmt.Errorf("unknown variable name: %s", e.Name)
+	}
+	return
+}
+
+func (c *compiler) compileBinaryExpr(e *ast.BinaryExpr) (val llvm.Value, err error) {
+	var lhs, rhs llvm.Value
+	if lhs, err = c.Compile(e.Left); err != nil {
+		return
+	}
+	if rhs, err = c.Compile(e.Right); err != nil {
+		return
+	}
+
+	// TODO: better switch
+	switch e.Op.Raw()[0] {
+	case '+':
+		val = c.builder.CreateFAdd(lhs, rhs, "addtmp")
+	case '-':
+		val = c.builder.CreateFSub(lhs, rhs, "subtmp")
+	case '*':
+		val = c.builder.CreateFMul(lhs, rhs, "multmp")
+	case '<':
+		boolVal := c.builder.CreateFCmp(llvm.FloatULT, lhs, rhs, "cmptmp")
+		// Convert bool 0/1 to double 0.0 or 1.0
+		val = c.builder.CreateUIToFP(boolVal, c.DoubleType(), "booltmp")
+	default:
+		err = fmt.Errorf("invalid binary operator: %s", t.Op)
 	}
 	return
 }
