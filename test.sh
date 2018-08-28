@@ -3,4 +3,4 @@
 source "env.sh"
 
 # main
-test "$@"
+__test "$@"

@@ -1,34 +1,20 @@
 #!/usr/bin/env bash
 
-function gopath() {
-    local paths=( $( tr ':' '\n' <<< "$GOPATH" ) )
-    printf %s "${paths[0]}"
-}
-
-function ldflags() {
-    printf %s "-r $(gopath)/src/llvm.org/llvm/bindings/go/llvm/workdir/llvm_build/lib"
-}
-
-function build() {
+function __build() {
     local args=(
         build "$@"
-        -ldflags="$( ldflags )"
-        -o ../bin/lex
-        .
+        -o bin/lex
+        "github.com/evovetech/lex/cmd"
     )
-    echo '$' "go ${args[@]}"
-    cd cmd && go "${args[@]}"
+    echo '$' "gollvm ${args[@]}"
+    gollvm "${args[@]}"
 }
 
-function test() {
+function __test() {
     local args=(
         test "$@"
-        -ldflags="$( ldflags )"
-        ./...
+        "github.com/evovetech/lex/..."
     )
-    echo '$' "go ${args[@]}"
-    go "${args[@]}"
+    echo '$' "gollvm ${args[@]}"
+    gollvm "${args[@]}"
 }
-
-export -f build
-export -f test
