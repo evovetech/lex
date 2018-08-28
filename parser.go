@@ -211,8 +211,8 @@ func (p *Parser) ParseDefinition() (f *ast.FunctionExpr, err error) {
 	}
 
 	f = &ast.FunctionExpr{
-		Prototype: proto,
-		Body:      body,
+		Proto: proto,
+		Body:  body,
 	}
 	return
 }
@@ -227,7 +227,7 @@ func (p *Parser) ParseTopLevelExpression() (f *ast.FunctionExpr, err error) {
 	if expr, err = p.ParseExpression(); err == nil {
 		f = &ast.FunctionExpr{
 			// Make anonymous proto
-			Prototype: &ast.PrototypeExpr{
+			Proto: &ast.PrototypeExpr{
 				Name: "__anon_expr",
 				Args: []string{},
 			},

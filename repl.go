@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/evovetech/lex/ast"
 	"github.com/evovetech/lex/compiler"
 	"github.com/evovetech/lex/token"
 )
@@ -19,23 +18,23 @@ type repl struct {
 	out, err io.Writer
 }
 
-func NewRepl(in io.Reader, out, err io.Writer) Repl {
+func NewRepl(name string, in io.Reader, out, err io.Writer) Repl {
 	lex := NewLexer(in)
 	parser := NewParser(lex)
 	return &repl{
 		Parser:   parser,
-		compiler: compiler.NewCompiler(),
+		compiler: compiler.NewCompiler(name),
 		out:      out,
 		err:      err,
 	}
 }
 
 func (r *repl) Loop() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("recovered in Loop()", r)
-		}
-	}()
+	//defer func() {
+	//	if r := recover(); r != nil {
+	//		fmt.Printf("recovered in Loop() %v\n", r)
+	//	}
+	//}()
 	for {
 		fmt.Fprintf(r.out, "ready> ")
 		switch tok := r.CurToken(); tok.Kind() {
@@ -57,6 +56,13 @@ func (r *repl) Loop() {
 func (r *repl) handleDefinition() {
 	if def, err := r.ParseDefinition(); err == nil {
 		fmt.Fprintf(r.out, "parsed a def: %s\n", def)
+		if code, err := r.compiler.Compile(def); err == nil {
+			fmt.Fprintf(r.out, "Read function definition:")
+			code.Dump()
+			fmt.Fprint(r.out, "\n")
+		} else {
+			fmt.Fprintf(r.err, "error compiling def: %s\n", err.Error())
+		}
 	} else {
 		fmt.Fprintf(r.err, "error handling def: %s\n", err.Error())
 		// skip next token for error recovery
@@ -67,6 +73,13 @@ func (r *repl) handleDefinition() {
 func (r *repl) handleExtern() {
 	if extern, err := r.ParseExtern(); err == nil {
 		fmt.Fprintf(r.out, "parsed an extern: %s\n", extern)
+		if code, err := r.compiler.Compile(extern); err == nil {
+			fmt.Fprintf(r.out, "Read extern:")
+			code.Dump()
+			fmt.Fprint(r.out, "\n")
+		} else {
+			fmt.Fprintf(r.err, "error compiling extern: %s\n", err.Error())
+		}
 	} else {
 		fmt.Fprintf(r.err, "error handling extern: %s\n", err.Error())
 		// skip next token for error recovery
@@ -76,17 +89,13 @@ func (r *repl) handleExtern() {
 
 func (r *repl) handleTopLevelExpression() {
 	if topLevel, err := r.ParseTopLevelExpression(); err == nil {
-		fmt.Fprintf(r.out, "parsed a top level: %s\n", topLevel)
-		if bin, ok := topLevel.Body.(*ast.BinaryExpr); ok {
-			if val, err := r.compiler.Compile(bin); err == nil {
-				fmt.Fprintf(r.out, "parsed a binary value")
-				fmt.Fprintf(r.out, " -> %s<%s>{ ", val.Name(), val.Type())
-				// TODO: assign out
-				val.Dump()
-				fmt.Fprintln(r.out, " }")
-			} else {
-				fmt.Fprintf(r.out, "error parsing binary value: %s\n", err.Error())
-			}
+		fmt.Fprintf(r.out, "parsed a top-level: %s\n", topLevel)
+		if code, err := r.compiler.Compile(topLevel); err == nil {
+			fmt.Fprintf(r.out, "Read top-level epression:")
+			code.Dump()
+			fmt.Fprint(r.out, "\n")
+		} else {
+			fmt.Fprintf(r.err, "error compiling top-level expression: %s\n", err.Error())
 		}
 	} else {
 		fmt.Fprintf(r.err, "error handling top level: %s\n", err.Error())

@@ -12,11 +12,12 @@ type Compiler interface {
 	Compile(node ast.Node) (llvm.Value, error)
 }
 
-func NewCompiler() Compiler {
+func NewCompiler(name string) Compiler {
 	ctx := llvm.GlobalContext()
 	return &compiler{
 		Context:     ctx,
 		builder:     ctx.NewBuilder(),
+		module:      ctx.NewModule(name),
 		namedValues: make(map[string]llvm.Value),
 	}
 }
@@ -40,6 +41,12 @@ func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
 		val, err = c.compileVariableExpr(e)
 	case *ast.BinaryExpr:
 		val, err = c.compileBinaryExpr(e)
+	case *ast.CallExpr:
+		val, err = c.compileCallExpr(e)
+	case *ast.PrototypeExpr:
+		val, err = c.compilePrototype(e)
+	case *ast.FunctionExpr:
+		val, err = c.compileFunction(e)
 	default:
 		err = fmt.Errorf("error compiling. node type not handled: %s", node)
 	}
@@ -77,8 +84,98 @@ func (c *compiler) compileBinaryExpr(e *ast.BinaryExpr) (val llvm.Value, err err
 		// Convert bool 0/1 to double 0.0 or 1.0
 		val = c.builder.CreateUIToFP(boolVal, c.DoubleType(), "booltmp")
 	default:
-		err = fmt.Errorf("invalid binary operator: %s", t.Op)
+		err = fmt.Errorf("invalid binary operator: %s", e.Op)
 	}
+	return
+}
+
+func (c *compiler) compileCallExpr(e *ast.CallExpr) (val llvm.Value, err error) {
+	// Look up the name in the global module table.
+	var fn llvm.Value
+	if fn = c.module.NamedFunction(e.Callee); fn.IsNil() {
+		err = fmt.Errorf("unknown function referenced: %s", e)
+		return
+	}
+
+	var size int
+	if size = fn.ParamsCount(); size != len(e.Args) {
+		err = fmt.Errorf("incorrect # of arguments passed: %d (expected %d)",
+			size, len(e.Args))
+		return
+	}
+
+	var args []llvm.Value
+	for _, arg := range e.Args {
+		var argVal llvm.Value
+		if argVal, err = c.Compile(arg); err != nil {
+			args = append(args, argVal)
+			continue
+		}
+		return
+	}
+
+	val = c.builder.CreateCall(fn, args, "calltmp")
+	return
+}
+
+func (c *compiler) compilePrototype(e *ast.PrototypeExpr) (fn llvm.Value, err error) {
+	var size = len(e.Args)
+	var types = make([]llvm.Type, size)
+	for i := 0; i < size; i++ {
+		types[i] = c.DoubleType()
+	}
+
+	fnType := llvm.FunctionType(c.DoubleType(), types, false)
+	fn = llvm.AddFunction(c.module, e.Name, fnType)
+	fn.SetLinkage(llvm.ExternalLinkage)
+
+	// Set names for all arguments.
+	for i, arg := range fn.Params() {
+		arg.SetName(e.Args[i])
+	}
+	return
+}
+
+func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err error) {
+	fn = c.module.NamedFunction(e.Proto.Name)
+	if fn.IsNil() {
+		if fn, err = c.Compile(e.Proto); err != nil {
+			return
+		}
+		if fn.IsNil() {
+			err = fmt.Errorf("function is nil")
+			return
+		}
+	}
+	if fn.BasicBlocksCount() > 0 {
+		err = fmt.Errorf("function cannot be redefined")
+		return
+	}
+
+	// Create a new basic block to start insertion into.
+	block := c.AddBasicBlock(fn, "entry")
+	c.builder.SetInsertPoint(block, llvm.Value{})
+
+	// Record the function arguments in the NamedValues map.
+	m := c.namedValues
+	for k := range m {
+		delete(m, k)
+	}
+	for _, arg := range fn.Params() {
+		m[arg.Name()] = arg
+	}
+
+	var body llvm.Value
+	if body, err = c.Compile(e.Body); err == nil {
+		if !body.IsNil() {
+			c.builder.CreateRet(body)
+			llvm.VerifyFunction(fn, llvm.PrintMessageAction)
+			return
+		}
+		err = fmt.Errorf("body is nil: %s", e.Body)
+	}
+
+	fn.EraseFromParentAsFunction()
 	return
 }
 

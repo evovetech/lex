@@ -99,10 +99,10 @@ func (p *PrototypeExpr) String() string {
 
 type FunctionExpr struct {
 	expr
-	Prototype *PrototypeExpr
-	Body      Expression
+	Proto *PrototypeExpr
+	Body  Expression
 }
 
 func (f *FunctionExpr) String() string {
-	return fmt.Sprintf("%s %s", f.Prototype, f.Body)
+	return fmt.Sprintf("%s %s", f.Proto, f.Body)
 }
