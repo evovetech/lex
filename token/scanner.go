@@ -58,6 +58,9 @@ _:
 	case '-':
 		sc.append(r, val, &pos)
 		return MINUS
+	case '*':
+		sc.append(r, val, &pos)
+		return STAR
 
 	case '<':
 		sc.append(r, val, &pos)
