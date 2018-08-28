@@ -38,6 +38,6 @@ func init() {
 
 func run(cmd *cobra.Command, args []string) {
 	in, out, err := os.Stdin, os.Stdout, os.Stderr
-	eval := NewEval(in, out, err)
-	eval.Loop()
+	repl := NewRepl(in, out, err)
+	repl.Loop()
 }

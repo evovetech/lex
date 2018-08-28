@@ -134,7 +134,7 @@ func (p *Parser) ParseBinOpRhs(exprPrec op.Precedence, lhs ast.Expression) (ast.
 		}
 
 		// Okay, we know this is a binop.
-		binOp := p.CurToken().kind
+		binOp := p.CurToken().Value()
 		p.NextToken() // eat binop
 
 		// Parse the primary expression after the binary operator.
@@ -229,6 +229,7 @@ func (p *Parser) ParseTopLevelExpression() (f *ast.FunctionExpr, err error) {
 			// Make anonymous proto
 			Prototype: &ast.PrototypeExpr{
 				Name: "__anon_expr",
+				Args: []string{},
 			},
 			Body: expr,
 		}

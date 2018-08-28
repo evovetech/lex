@@ -62,12 +62,12 @@ func (v *VariableExpr) String() string {
 
 type BinaryExpr struct {
 	expr
-	Op          token.Token
+	Op          token.Value
 	Left, Right Expression
 }
 
 func (b *BinaryExpr) String() string {
-	op := string(append([]rune{}, rune(b.Op)))
+	op := b.Op.RawString()
 	return fmt.Sprintf("(%s %s %s)", b.Left, op, b.Right)
 }
 
