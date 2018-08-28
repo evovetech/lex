@@ -39,7 +39,7 @@ atan2(sin(.4), cos(42))
 		if i++; i >= max {
 			break
 		}
-		if p.cur.IsDone() {
+		if p.CurToken().IsDone() {
 			break
 		}
 	}

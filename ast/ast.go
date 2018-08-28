@@ -3,6 +3,8 @@ package ast
 import (
 	"fmt"
 	"strings"
+
+	"github.com/evovetech/lex/token"
 )
 
 // The base Node interface
@@ -60,7 +62,7 @@ func (v *VariableExpr) String() string {
 
 type BinaryExpr struct {
 	expr
-	Op          uint8
+	Op          token.Token
 	Left, Right Expression
 }
 
@@ -97,7 +99,7 @@ func (p *PrototypeExpr) String() string {
 
 type FunctionExpr struct {
 	expr
-	Prototype PrototypeExpr
+	Prototype *PrototypeExpr
 	Body      Expression
 }
 

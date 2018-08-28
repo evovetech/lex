@@ -19,6 +19,7 @@ const (
 	ASSIGN
 	PLUS
 	MINUS
+	STAR
 
 	LT
 	GT
@@ -63,6 +64,7 @@ var tokenNames = [...]string{
 	ASSIGN: "assign",
 	PLUS:   "plus",
 	MINUS:  "minus",
+	STAR:   "star",
 
 	LT: "less than",
 	GT: "greater than",

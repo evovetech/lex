@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	. "github.com/evovetech/lex"
 	"github.com/spf13/cobra"
 	"llvm.org/llvm/bindings/go/llvm"
 )
@@ -11,6 +12,7 @@ import (
 var lex = &cobra.Command{
 	Use:   "lex",
 	Short: "lex input",
+	Run:   run,
 }
 
 func main() {
@@ -32,4 +34,10 @@ func init() {
 			},
 		},
 	)
+}
+
+func run(cmd *cobra.Command, args []string) {
+	in, out, err := os.Stdin, os.Stdout, os.Stderr
+	eval := NewEval(in, out, err)
+	eval.Loop()
 }

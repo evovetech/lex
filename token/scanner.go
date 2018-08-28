@@ -14,11 +14,8 @@ func NewScanner(rd io.Reader) Scanner {
 	name := "src"
 	sc := &scanner{
 		rd:  bufio.NewReader(rd),
-		pk:  new(ch),
 		pos: MakePosition(&name, 1, 0),
 	}
-	// init
-	sc.fill()
 	return sc
 }
 
@@ -26,6 +23,13 @@ type scanner struct {
 	rd  *bufio.Reader
 	pk  *ch
 	pos Position
+}
+
+func (sc *scanner) init() {
+	if sc.pk == nil {
+		sc.pk = new(ch)
+		sc.fill()
+	}
 }
 
 func (sc *scanner) NextToken(val *Value) Token {
@@ -173,6 +177,7 @@ func (sc *scanner) endToken(val *Value, pos *Position) {
 }
 
 func (sc *scanner) peek() ch {
+	sc.init()
 	return *sc.pk
 }
 

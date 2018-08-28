@@ -5,28 +5,41 @@ import (
 	"strconv"
 
 	"github.com/evovetech/lex/ast"
+	"github.com/evovetech/lex/op"
 	"github.com/evovetech/lex/token"
 )
 
 type Parser struct {
 	lex *Lexer
-	cur Token
+	cur *Token
 }
 
 func NewParser(lex *Lexer) *Parser {
 	p := &Parser{
 		lex: lex,
-		cur: lex.NextToken(),
 	}
 	return p
 }
 
+func (p *Parser) init() {
+	if p.cur == nil {
+		tok := p.lex.NextToken()
+		p.cur = &tok
+	}
+}
+
+func (p *Parser) CurToken() Token {
+	p.init()
+	return *p.cur
+}
+
 func (p *Parser) NextToken() {
-	p.cur = p.lex.NextToken()
+	p.init()
+	*p.cur = p.lex.NextToken()
 }
 
 func (p *Parser) ParseNumberExpr() (num *ast.NumberExpr, err error) {
-	tok := p.cur
+	tok := p.CurToken()
 	var val float64
 	if val, err = strconv.ParseFloat(tok.Value().RawString(), 64); err == nil {
 		num = &ast.NumberExpr{Val: val}
@@ -43,7 +56,7 @@ func (p *Parser) ParseParenExpr() (expr ast.Expression, err error) {
 		return
 	}
 
-	if p.cur.kind == token.RPAREN {
+	if p.CurToken().kind == token.RPAREN {
 		// eat ')'
 		p.NextToken()
 		return
@@ -53,17 +66,17 @@ func (p *Parser) ParseParenExpr() (expr ast.Expression, err error) {
 }
 
 func (p *Parser) ParseIdentifierExpr() (ast.Expression, error) {
-	var name = p.cur.val.RawString()
+	var name = p.CurToken().val.RawString()
 	var args []ast.Expression
 
 	p.NextToken()
-	if p.cur.kind != token.LPAREN {
+	if p.CurToken().kind != token.LPAREN {
 		return &ast.VariableExpr{Name: name}, nil
 	}
 
 	// eat '('
 	p.NextToken()
-	if p.cur.kind == token.RPAREN {
+	if p.CurToken().kind == token.RPAREN {
 		goto done
 	}
 
@@ -73,11 +86,12 @@ func (p *Parser) ParseIdentifierExpr() (ast.Expression, error) {
 		} else {
 			args = append(args, arg)
 		}
-		if p.cur.kind == token.RPAREN {
+		cur := p.CurToken()
+		if cur.kind == token.RPAREN {
 			goto done
 		}
-		if p.cur.kind != token.COMMA {
-			return nil, fmt.Errorf("error, expected comma but got %s", p.cur)
+		if cur.kind != token.COMMA {
+			return nil, fmt.Errorf("error, expected comma but got %s", cur)
 		}
 		p.NextToken()
 	}
@@ -96,7 +110,7 @@ done:
 }
 
 func (p *Parser) ParsePrimary() (ast.Expression, error) {
-	switch tok := p.cur; tok.kind {
+	switch tok := p.CurToken(); tok.kind {
 	case token.IDENTIFIER:
 		return p.ParseIdentifierExpr()
 	case token.NUMBER:
@@ -109,18 +123,123 @@ func (p *Parser) ParsePrimary() (ast.Expression, error) {
 	}
 }
 
-func (p *Parser) ParseBinOpRhs(exprPrec int, lhs ast.Expression) (ast.Expression, error) {
-	return nil, nil
+func (p *Parser) ParseBinOpRhs(exprPrec op.Precedence, lhs ast.Expression) (ast.Expression, error) {
+	expr := lhs
+	for {
+		// If this is a binop that binds at least as tightly as the current binop,
+		// consume it, otherwise we are done.
+		var tokPrec op.Precedence
+		if tokPrec = p.CurToken().Precedence(); tokPrec < exprPrec {
+			return lhs, nil
+		}
+
+		// Okay, we know this is a binop.
+		binOp := p.CurToken().kind
+		p.NextToken() // eat binop
+
+		// Parse the primary expression after the binary operator.
+		var rhs ast.Expression
+		var err error
+		if rhs, err = p.ParsePrimary(); err != nil {
+			return nil, err
+		}
+
+		// If BinOp binds less tightly with RHS than the operator after RHS, let
+		// the pending operator take RHS as its LHS.
+		if nextPrec := p.CurToken().Precedence(); tokPrec < nextPrec {
+			if rhs, err = p.ParseBinOpRhs(tokPrec+1, rhs); err != nil {
+				return nil, err
+			}
+		}
+
+		// merge lhs/rhs
+		lhs = &ast.BinaryExpr{
+			Op:    binOp,
+			Left:  lhs,
+			Right: rhs,
+		}
+	}
+	return nil, fmt.Errorf("error for %v %s", exprPrec, expr)
+}
+
+func (p *Parser) ParsePrototype() (*ast.PrototypeExpr, error) {
+	tok := p.CurToken()
+	if tok.kind != token.IDENTIFIER {
+		return nil, fmt.Errorf("expected function name in prototype: got %s", tok)
+	}
+
+	name := tok.val.RawString()
+	p.NextToken()
+
+	if tok = p.CurToken(); tok.kind != token.LPAREN {
+		return nil, fmt.Errorf("expected '(' in prototype: got %s", tok)
+	}
+
+	var argNames []string
+	for {
+		p.NextToken()
+		if tok = p.CurToken(); tok.kind == token.IDENTIFIER {
+			argNames = append(argNames, tok.val.RawString())
+			continue
+		}
+		break
+	}
+
+	if tok = p.CurToken(); tok.kind != token.RPAREN {
+		return nil, fmt.Errorf("expected ')' in prototype: got %s", tok)
+	}
+	p.NextToken() // eat '('
+
+	proto := &ast.PrototypeExpr{
+		Name: name,
+		Args: argNames,
+	}
+	return proto, nil
+}
+
+func (p *Parser) ParseDefinition() (f *ast.FunctionExpr, err error) {
+	p.NextToken() // eat def
+
+	var proto *ast.PrototypeExpr
+	if proto, err = p.ParsePrototype(); err != nil {
+		return
+	}
+
+	var body ast.Expression
+	if body, err = p.ParseExpression(); err != nil {
+		return
+	}
+
+	f = &ast.FunctionExpr{
+		Prototype: proto,
+		Body:      body,
+	}
+	return
+}
+
+func (p *Parser) ParseExtern() (*ast.PrototypeExpr, error) {
+	p.NextToken() // eat extern
+	return p.ParsePrototype()
+}
+
+func (p *Parser) ParseTopLevelExpression() (f *ast.FunctionExpr, err error) {
+	var expr ast.Expression
+	if expr, err = p.ParseExpression(); err == nil {
+		f = &ast.FunctionExpr{
+			// Make anonymous proto
+			Prototype: &ast.PrototypeExpr{
+				Name: "__anon_expr",
+			},
+			Body: expr,
+		}
+	}
+	return
 }
 
 func (p *Parser) ParseExpression() (ast.Expression, error) {
-	_, err := p.ParsePrimary()
+	lhs, err := p.ParsePrimary()
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO:
-	err = fmt.Errorf("TODO: parse expression '%s'", p.cur)
-	p.NextToken()
-	return &ast.ErrorExpr{Err: err}, nil
+	return p.ParseBinOpRhs(op.NOOP, lhs)
 }

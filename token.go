@@ -3,6 +3,7 @@ package lex
 import (
 	"fmt"
 
+	"github.com/evovetech/lex/op"
 	"github.com/evovetech/lex/token"
 )
 
@@ -11,16 +12,20 @@ type Token struct {
 	val  token.Value
 }
 
-func (t *Token) Kind() token.Token {
+func (t Token) Kind() token.Token {
 	return t.kind
 }
 
-func (t *Token) Value() token.Value {
+func (t Token) Value() token.Value {
 	return t.val
 }
 
-func (t *Token) IsDone() bool {
+func (t Token) IsDone() bool {
 	return t.val.Error() != nil || t.kind.IsDone()
+}
+
+func (t Token) Precedence() op.Precedence {
+	return op.GetPrecedence(t.kind)
 }
 
 func (t Token) String() string {
