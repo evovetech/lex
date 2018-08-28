@@ -14,18 +14,43 @@ type Compiler interface {
 
 func NewCompiler(name string) Compiler {
 	ctx := llvm.GlobalContext()
+	mod := ctx.NewModule(name)
 	return &compiler{
 		Context:     ctx,
 		builder:     ctx.NewBuilder(),
-		module:      ctx.NewModule(name),
+		module:      mod,
+		fpm:         newFunctionPassManager(mod),
 		namedValues: make(map[string]llvm.Value),
 	}
+}
+
+func newFunctionPassManager(mod llvm.Module) llvm.PassManager {
+	// Create a new pass manager attached to module.
+	fpm := llvm.NewFunctionPassManagerForModule(mod)
+
+	// Do simple "peephole" optimizations and bit-twiddling optzns.
+	fpm.AddInstructionCombiningPass()
+
+	// Reassociate expressions.
+	fpm.AddReassociatePass()
+
+	// Eliminate Common SubExpressions.
+	fpm.AddGVNPass()
+
+	// Simplify the control flow graph (deleting unreachable blocks, etc).
+	fpm.AddCFGSimplificationPass()
+
+	// init
+	fpm.InitializeFunc()
+
+	return fpm
 }
 
 type compiler struct {
 	llvm.Context
 	builder     llvm.Builder
 	module      llvm.Module
+	fpm         llvm.PassManager
 	namedValues map[string]llvm.Value
 }
 
@@ -168,8 +193,14 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 	var body llvm.Value
 	if body, err = c.Compile(e.Body); err == nil {
 		if !body.IsNil() {
+			// finish off the function
 			c.builder.CreateRet(body)
+
+			// validate the generated code, checking for consistency.
 			llvm.VerifyFunction(fn, llvm.PrintMessageAction)
+
+			// optimize the function
+			c.fpm.RunFunc(fn)
 			return
 		}
 		err = fmt.Errorf("body is nil: %s", e.Body)
