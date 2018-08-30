@@ -9,6 +9,7 @@ import (
 
 type Compiler interface {
 	GetContext() llvm.Context
+	GetModule() llvm.Module
 	Compile(node ast.Node) (llvm.Value, error)
 }
 
@@ -56,6 +57,10 @@ type compiler struct {
 
 func (c *compiler) GetContext() llvm.Context {
 	return c.Context
+}
+
+func (c *compiler) GetModule() llvm.Module {
+	return c.module
 }
 
 func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
@@ -173,6 +178,10 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 		}
 	}
 	if fn.BasicBlocksCount() > 0 {
+		if fn.Name() == "__anon_expr" {
+			fn.EraseFromParentAsFunction()
+			return c.compileFunction(e)
+		}
 		err = fmt.Errorf("function cannot be redefined")
 		return
 	}
