@@ -64,6 +64,7 @@ func (c *compiler) GetModule() llvm.Module {
 }
 
 func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
+	fmt.Printf("compiling %T -> %s >>>\n", node, node)
 	switch e := node.(type) {
 	case *ast.NumberExpr:
 		val = c.float64(e.Val)
@@ -80,6 +81,7 @@ func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
 	default:
 		err = fmt.Errorf("error compiling. node type not handled: %s", node)
 	}
+	fmt.Printf("<<< compiled %T -> (val=%v, err=%v)\n", node, val, err)
 	return
 }
 
@@ -120,6 +122,19 @@ func (c *compiler) compileBinaryExpr(e *ast.BinaryExpr) (val llvm.Value, err err
 }
 
 func (c *compiler) compileCallExpr(e *ast.CallExpr) (val llvm.Value, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			switch e := r.(type) {
+			case error:
+				fmt.Printf("error: %s\n", e.Error())
+				err = e
+			default:
+				err = fmt.Errorf("%v", e)
+				fmt.Printf("error: %s\n", err.Error())
+			}
+		}
+	}()
+
 	// Look up the name in the global module table.
 	var fn llvm.Value
 	if fn = c.module.NamedFunction(e.Callee); fn.IsNil() {
@@ -130,21 +145,23 @@ func (c *compiler) compileCallExpr(e *ast.CallExpr) (val llvm.Value, err error) 
 	var size int
 	if size = fn.ParamsCount(); size != len(e.Args) {
 		err = fmt.Errorf("incorrect # of arguments passed: %d (expected %d)",
-			size, len(e.Args))
+			len(e.Args), size)
 		return
 	}
 
 	var args []llvm.Value
 	for _, arg := range e.Args {
 		var argVal llvm.Value
-		if argVal, err = c.Compile(arg); err != nil {
+		if argVal, err = c.Compile(arg); err == nil {
 			args = append(args, argVal)
 			continue
 		}
 		return
 	}
 
-	val = c.builder.CreateCall(fn, args, "calltmp")
+	if val = c.builder.CreateCall(fn, args, "calltmp"); val.IsNil() {
+		err = fmt.Errorf("call is nil: %v", val)
+	}
 	return
 }
 
@@ -167,8 +184,7 @@ func (c *compiler) compilePrototype(e *ast.PrototypeExpr) (fn llvm.Value, err er
 }
 
 func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err error) {
-	fn = c.module.NamedFunction(e.Proto.Name)
-	if fn.IsNil() {
+	if fn = c.module.NamedFunction(e.Proto.Name); fn.IsNil() {
 		if fn, err = c.Compile(e.Proto); err != nil {
 			return
 		}
@@ -188,7 +204,7 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 
 	// Create a new basic block to start insertion into.
 	block := c.AddBasicBlock(fn, "entry")
-	c.builder.SetInsertPoint(block, llvm.Value{})
+	c.builder.SetInsertPointAtEnd(block)
 
 	// Record the function arguments in the NamedValues map.
 	m := c.namedValues
@@ -202,6 +218,9 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 	var body llvm.Value
 	if body, err = c.Compile(e.Body); err == nil {
 		if !body.IsNil() {
+			fmt.Println("body >>")
+			body.Dump()
+			fmt.Println("\n<< body")
 			// finish off the function
 			c.builder.CreateRet(body)
 
@@ -209,7 +228,7 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 			llvm.VerifyFunction(fn, llvm.PrintMessageAction)
 
 			// optimize the function
-			c.fpm.RunFunc(fn)
+			//c.fpm.RunFunc(fn)
 			return
 		}
 		err = fmt.Errorf("body is nil: %s", e.Body)
