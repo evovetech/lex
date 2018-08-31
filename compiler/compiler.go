@@ -78,6 +78,8 @@ func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
 		val, err = c.compilePrototype(e)
 	case *ast.FunctionExpr:
 		val, err = c.compileFunction(e)
+	case *ast.IfExpr:
+		val, err = c.compileIfExpression(e)
 	default:
 		err = fmt.Errorf("error compiling. node type not handled: %s", node)
 	}
@@ -229,7 +231,73 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 	llvm.VerifyFunction(fn, llvm.PrintMessageAction)
 
 	// optimize the function
-	c.fpm.RunFunc(fn)
+	//c.fpm.RunFunc(fn)
+	return
+}
+
+func (c *compiler) compileIfExpression(e *ast.IfExpr) (ret llvm.Value, err error) {
+	var ifVal llvm.Value
+	if ifVal, err = c.Compile(e.Cond); err != nil {
+		return
+	}
+
+	// Convert condition to a bool by comparing non-equal to 0.0.
+	ifVal = c.builder.CreateFCmp(llvm.FloatONE, ifVal, c.float64(0), "ifcond")
+
+	// begin
+	startBB := c.builder.GetInsertBlock()
+	function := startBB.Parent()
+
+	// Emit 'then' value
+	thenBB := c.AddBasicBlock(function, "then")
+	c.builder.SetInsertPointAtEnd(thenBB)
+	var thenVal llvm.Value
+	if thenVal, err = c.Compile(e.Then); err != nil {
+		return
+	}
+	/*
+	Codegen of 'then' can change the current block, update then_bb for the
+       * phi. We create a new name because one is used for the phi node, and the
+       * other is used for the conditional branch.
+	 */
+	newThenBB := c.builder.GetInsertBlock()
+
+	// Emit else value
+	elseBB := c.AddBasicBlock(function, "else")
+	c.builder.SetInsertPointAtEnd(elseBB)
+	var elseVal llvm.Value
+	if elseVal, err = c.Compile(e.Else); err != nil {
+		return
+	}
+	newElseBB := c.builder.GetInsertBlock()
+
+	// Emit merge block
+	mergeBB := c.AddBasicBlock(function, "ifcont")
+	c.builder.SetInsertPointAtEnd(mergeBB)
+	phi := c.builder.CreatePHI(c.DoubleType(), "iftmp")
+	phi.AddIncoming([]llvm.Value{
+		thenVal,
+		elseVal,
+	}, []llvm.BasicBlock{
+		thenBB,
+		elseBB,
+	})
+
+	// return to start block to add conditional branch
+	c.builder.SetInsertPointAtEnd(startBB)
+	c.builder.CreateCondBr(ifVal, thenBB, elseBB)
+
+	// set an unconditionaal branch at the end of
+	// the then block and the else block
+	// to the merge block
+	c.builder.SetInsertPointAtEnd(newThenBB)
+	c.builder.CreateBr(mergeBB)
+	c.builder.SetInsertPointAtEnd(newElseBB)
+	c.builder.CreateBr(mergeBB)
+
+	// finally set the builder to the end of the merge block
+	c.builder.SetInsertPointAtEnd(mergeBB)
+	ret = phi
 	return
 }
 

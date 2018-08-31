@@ -1,6 +1,7 @@
 package ast
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -105,4 +106,20 @@ type FunctionExpr struct {
 
 func (f *FunctionExpr) String() string {
 	return fmt.Sprintf("%s %s", f.Proto, f.Body)
+}
+
+type IfExpr struct {
+	expr
+	Cond, Then, Else Expression
+}
+
+func (e *IfExpr) String() string {
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "if %s then\n", e.Cond)
+	fmt.Fprintf(&buf, "  %s\n", e.Then)
+	if el := e.Else; el != nil {
+		fmt.Fprintln(&buf, "else")
+		fmt.Fprintf(&buf, "  %s\n", el)
+	}
+	return buf.String()
 }

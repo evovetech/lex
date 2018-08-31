@@ -117,6 +117,8 @@ func (p *Parser) ParsePrimary() (ast.Expression, error) {
 		return p.ParseNumberExpr()
 	case token.LPAREN:
 		return p.ParseParenExpr()
+	case token.IF:
+		return p.ParseIfExpr()
 	default:
 		p.NextToken()
 		return nil, fmt.Errorf("error for token: %s", tok)
@@ -243,4 +245,43 @@ func (p *Parser) ParseExpression() (ast.Expression, error) {
 		return nil, err
 	}
 	return p.ParseBinOpRhs(op.NOOP, lhs)
+}
+
+func (p *Parser) ParseIfExpr() (ret *ast.IfExpr, err error) {
+	var cond, then, el ast.Expression
+
+	// IF
+	p.NextToken()
+	if cond, err = p.ParseExpression(); err != nil {
+		return
+	}
+
+	// THEN
+	if tok := p.CurToken(); tok.kind != token.THEN {
+		err = fmt.Errorf("expected 'then' but got %s", tok)
+		return
+	}
+	p.NextToken() // eat the then.
+	if then, err = p.ParseExpression(); err != nil {
+		return
+	}
+
+	// ELSE
+	if tok := p.CurToken(); tok.kind == token.ELSE {
+		p.NextToken() // eat the else
+		if el, err = p.ParseExpression(); err != nil {
+			return
+		}
+	} else {
+		// TODO: maybe return what we currently have, not requiring the else
+		err = fmt.Errorf("expected 'else' but got %s", tok)
+		return
+	}
+
+	ret = &ast.IfExpr{
+		Cond: cond,
+		Then: then,
+		Else: el,
+	}
+	return
 }

@@ -36,6 +36,11 @@ const (
 	// keywords
 	DEF
 	EXTERN
+	IF
+	THEN
+	ELSE
+	FOR
+	IN
 
 	maxToken
 )
@@ -79,6 +84,11 @@ var tokenNames = [...]string{
 
 	DEF:    "def",
 	EXTERN: "extern",
+	IF:     "if",
+	THEN:   "then",
+	ELSE:   "else",
+	FOR:    "for",
+	IN:     "in",
 }
 
 // keywordToken records the special tokens for
@@ -86,4 +96,9 @@ var tokenNames = [...]string{
 var keywordToken = map[string]Token{
 	"def":    DEF,
 	"extern": EXTERN,
+	"if":     IF,
+	"then":   THEN,
+	"else":   ELSE,
+	"for":    FOR,
+	"in":     IN,
 }
