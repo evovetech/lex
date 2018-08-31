@@ -64,7 +64,7 @@ func (c *compiler) GetModule() llvm.Module {
 }
 
 func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
-	fmt.Printf("compiling %T -> %s >>>\n", node, node)
+	//fmt.Printf("compiling %T -> %s >>>\n", node, node)
 	switch e := node.(type) {
 	case *ast.NumberExpr:
 		val = c.float64(e.Val)
@@ -81,7 +81,7 @@ func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
 	default:
 		err = fmt.Errorf("error compiling. node type not handled: %s", node)
 	}
-	fmt.Printf("<<< compiled %T -> (val=%v, err=%v)\n", node, val, err)
+	//fmt.Printf("<<< compiled %T -> (val=%v, err=%v)\n", node, val, err)
 	return
 }
 
@@ -159,9 +159,7 @@ func (c *compiler) compileCallExpr(e *ast.CallExpr) (val llvm.Value, err error) 
 		return
 	}
 
-	if val = c.builder.CreateCall(fn, args, "calltmp"); val.IsNil() {
-		err = fmt.Errorf("call is nil: %v", val)
-	}
+	val = c.builder.CreateCall(fn, args, "calltmp")
 	return
 }
 
@@ -216,25 +214,22 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 	}
 
 	var body llvm.Value
-	if body, err = c.Compile(e.Body); err == nil {
-		if !body.IsNil() {
-			fmt.Println("body >>")
-			body.Dump()
-			fmt.Println("\n<< body")
-			// finish off the function
-			c.builder.CreateRet(body)
-
-			// validate the generated code, checking for consistency.
-			llvm.VerifyFunction(fn, llvm.PrintMessageAction)
-
-			// optimize the function
-			//c.fpm.RunFunc(fn)
-			return
+	if body, err = c.Compile(e.Body); err != nil || body.IsNil() {
+		if err == nil {
+			err = fmt.Errorf("body is nil: %s", e.Body)
 		}
-		err = fmt.Errorf("body is nil: %s", e.Body)
+		fn.EraseFromParentAsFunction()
+		return
 	}
 
-	fn.EraseFromParentAsFunction()
+	// finish off the function
+	c.builder.CreateRet(body)
+
+	// validate the generated code, checking for consistency.
+	llvm.VerifyFunction(fn, llvm.PrintMessageAction)
+
+	// optimize the function
+	c.fpm.RunFunc(fn)
 	return
 }
 
