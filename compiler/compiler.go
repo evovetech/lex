@@ -7,27 +7,50 @@ import (
 	"llvm.org/llvm/bindings/go/llvm"
 )
 
+type Context struct {
+	llvm.Context
+}
+
+type Module struct {
+	llvm.Module
+}
+
 type Compiler interface {
 	GetContext() llvm.Context
 	GetModule() llvm.Module
 	Compile(node ast.Node) (llvm.Value, error)
 }
 
+func GlobalContext() *Context {
+	return &Context{llvm.GlobalContext()}
+}
+
 func NewCompiler(name string) Compiler {
-	ctx := llvm.GlobalContext()
-	mod := ctx.NewModule(name)
+	return GlobalContext().NewCompiler(name)
+}
+
+func (ctx *Context) NewCompiler(name string) Compiler {
+	c := ctx.baseCompiler(name)
+	c.fpm = c.module.newFunctionPassManager()
+	return c
+}
+
+func (ctx *Context) NewModule(name string) *Module {
+	return &Module{ctx.Context.NewModule(name)}
+}
+
+func (ctx *Context) baseCompiler(name string) *compiler {
 	return &compiler{
 		Context:     ctx,
+		module:      ctx.NewModule(name),
 		builder:     ctx.NewBuilder(),
-		module:      mod,
-		fpm:         newFunctionPassManager(mod),
 		namedValues: make(map[string]llvm.Value),
 	}
 }
 
-func newFunctionPassManager(mod llvm.Module) llvm.PassManager {
+func (mod *Module) newFunctionPassManager() llvm.PassManager {
 	// Create a new pass manager attached to module.
-	fpm := llvm.NewFunctionPassManagerForModule(mod)
+	fpm := llvm.NewFunctionPassManagerForModule(mod.Module)
 
 	// Do simple "peephole" optimizations and bit-twiddling optzns.
 	fpm.AddInstructionCombiningPass()
@@ -48,19 +71,19 @@ func newFunctionPassManager(mod llvm.Module) llvm.PassManager {
 }
 
 type compiler struct {
-	llvm.Context
+	*Context
 	builder     llvm.Builder
-	module      llvm.Module
+	module      *Module
 	fpm         llvm.PassManager
 	namedValues map[string]llvm.Value
 }
 
 func (c *compiler) GetContext() llvm.Context {
-	return c.Context
+	return c.Context.Context
 }
 
 func (c *compiler) GetModule() llvm.Module {
-	return c.module
+	return c.module.Module
 }
 
 func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
@@ -173,7 +196,7 @@ func (c *compiler) compilePrototype(e *ast.PrototypeExpr) (fn llvm.Value, err er
 	}
 
 	fnType := llvm.FunctionType(c.DoubleType(), types, false)
-	fn = llvm.AddFunction(c.module, e.Name, fnType)
+	fn = llvm.AddFunction(c.GetModule(), e.Name, fnType)
 	fn.SetLinkage(llvm.ExternalLinkage)
 
 	// Set names for all arguments.

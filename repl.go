@@ -20,10 +20,9 @@ type repl struct {
 	out, errOut io.Writer
 }
 
-func NewRepl(name string, in io.Reader, out, errOut io.Writer) Repl {
+func NewRepl(c compiler.Compiler, in io.Reader, out, errOut io.Writer) Repl {
 	lex := NewLexer(in)
 	parser := NewParser(lex)
-	c := compiler.NewCompiler(name)
 	ee, err := llvm.NewExecutionEngine(c.GetModule())
 	if err != nil {
 		panic(err)

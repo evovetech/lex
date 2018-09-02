@@ -1,4 +1,4 @@
-package jit
+package compiler
 
 import "llvm.org/llvm/bindings/go/llvm"
 
