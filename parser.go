@@ -244,7 +244,7 @@ func (p *Parser) ParseExpression() (ast.Expression, error) {
 	if err != nil {
 		return nil, err
 	}
-	return p.ParseBinOpRhs(op.NOOP, lhs)
+	return p.ParseBinOpRhs(op.NoOp, lhs)
 }
 
 func (p *Parser) ParseIfExpr() (ret *ast.IfExpr, err error) {

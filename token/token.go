@@ -102,3 +102,34 @@ var keywordToken = map[string]Token{
 	"for":    FOR,
 	"in":     IN,
 }
+
+type Tok interface {
+	Kind() Token
+	Val() Value
+}
+
+type Reader interface {
+	Peek(buf []Char) error
+	Consume(n int) error
+}
+
+type Char interface {
+	Val() rune
+	Size() int
+}
+
+type Tokenizer interface {
+	Start(ch Char) bool
+	Continue(i int, ch Char) bool
+	End() (Token, error)
+}
+
+
+/*
+
+Lexer:    in(chars  []rune)       => out(token  Token)
+Parser:   in(tokens []Token)      => out(expr   Expression)
+Eval:     in(exprs  []Expression) => out(result Result)
+Compiler: in(exprs  []Expression) => out(prog   Program)
+
+*/

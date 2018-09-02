@@ -231,7 +231,7 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 	llvm.VerifyFunction(fn, llvm.PrintMessageAction)
 
 	// optimize the function
-	//c.fpm.RunFunc(fn)
+	c.fpm.RunFunc(fn)
 	return
 }
 
