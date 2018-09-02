@@ -48,8 +48,9 @@ func (r *repl) Loop() {
 		switch tok := r.CurToken(); tok.Kind() {
 		case token.EOF:
 			return
-		case token.SEMICOLON:
-			// ignore top-level semicolons.
+		case token.SEMICOLON,
+			token.COMMENT:
+			// ignore top-level semicolons. & comments
 			r.NextToken()
 		case token.DEF:
 			r.handleDefinition()

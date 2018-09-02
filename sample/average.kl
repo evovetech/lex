@@ -1,2 +1,9 @@
+
+# sum
+def sum(x y)
+    x + y;
+
+# average
 def average(x y)
-    (x + y) * 0.5
+    sum(x, y) * 0.5;
+
