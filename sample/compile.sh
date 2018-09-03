@@ -8,14 +8,15 @@ dir="$( get_dir "${BASH_SOURCE[0]}" )"
 
 # build & compile average code to bitcode
 cd "${dir}/.."
-./build.sh
+# ./build.sh
 cat "${dir}/average.kl" | bin/lex compile
 
 # create ll files
 cd "${dir}"
 llvm-dis output.bc -o output.ll
 llvm-as output.ll -o output.bc
-llc output.bc -o output.s
+llc output.bc -filetype=asm
+llc output.bc -filetype=obj
 
 # compile main.cpp & output together
-clang++ main.cpp output.s -o main
+clang++ main.cpp output.o -o main
