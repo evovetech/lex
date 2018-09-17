@@ -98,7 +98,7 @@ func (p *Parser) ParseIdentifierExpr() (ast.Expression, error) {
 
 done:
 
-// eat ')'
+	// eat ')'
 	p.NextToken()
 
 	// return

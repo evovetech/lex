@@ -55,7 +55,6 @@ func compile(_ *cobra.Command, _ []string) (e error) {
 		return
 	}
 
-
 	c := m.NewCompiler("lex")
 	in, out, err := os.Stdin, os.Stdout, os.Stderr
 	repl := NewRepl(c.GetCompiler(), in, out, err)

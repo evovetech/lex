@@ -124,7 +124,6 @@ type Tokenizer interface {
 	End() (Token, error)
 }
 
-
 /*
 
 Lexer:    in(chars  []rune)       => out(token  Token)

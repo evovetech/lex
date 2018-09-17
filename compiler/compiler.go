@@ -279,10 +279,10 @@ func (c *compiler) compileIfExpression(e *ast.IfExpr) (ret llvm.Value, err error
 		return
 	}
 	/*
-	Codegen of 'then' can change the current block, update then_bb for the
-       * phi. We create a new name because one is used for the phi node, and the
-       * other is used for the conditional branch.
-	 */
+		Codegen of 'then' can change the current block, update then_bb for the
+	       * phi. We create a new name because one is used for the phi node, and the
+	       * other is used for the conditional branch.
+	*/
 	newThenBB := c.builder.GetInsertBlock()
 
 	// Emit else value
