@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source "goenv.sh"
+
 function __build() {
     local args=(
         build "$@"
