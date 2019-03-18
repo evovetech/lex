@@ -7,3 +7,16 @@ def sum(x y)
 def average(x y)
     sum(x, y) * 0.5;
 
+# min
+def min(x y)
+    if (x < y) then
+        x
+    else
+        y
+
+# max
+def max(x y)
+    if (x < y) then
+        y
+    else
+        x
