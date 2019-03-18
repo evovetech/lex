@@ -27,3 +27,11 @@ def fib(x)
     1
   else
     fib(x-1) + fib(x-2)
+
+# call externals
+extern sin(arg);
+extern cos(arg);
+extern atan2(arg1 arg2);
+
+def callAtan2(x y)
+    atan2(sin(x), cos(y))

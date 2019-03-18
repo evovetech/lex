@@ -47,3 +47,17 @@ ifcont:                                           ; preds = %else, %entry
   %iftmp = phi double [ %addtmp, %else ], [ 1.000000e+00, %entry ]
   ret double %iftmp
 }
+
+declare double @sin(double)
+
+declare double @cos(double)
+
+declare double @atan2(double, double)
+
+define double @callAtan2(double %x, double %y) {
+entry:
+  %calltmp = call double @sin(double %x)
+  %calltmp1 = call double @cos(double %y)
+  %calltmp2 = call double @atan2(double %calltmp, double %calltmp1)
+  ret double %calltmp2
+}
