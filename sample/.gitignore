@@ -1,3 +1,4 @@
 /main
 /output.*
 !/output.ll
+!/output-unoptimized.ll

@@ -15,6 +15,17 @@ var lex = &cobra.Command{
 	Short: "lex input",
 	Run:   repl,
 }
+var vers = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version",
+	Run:   version,
+}
+var comp = &cobra.Command{
+	Use:   "compile",
+	Short: "Compiles",
+	RunE:  compile,
+}
+var optimize bool
 
 func main() {
 	// execute
@@ -24,16 +35,11 @@ func main() {
 }
 
 func init() {
-	lex.AddCommand(&cobra.Command{
-		Use:   "version",
-		Short: "Print the version",
-		Run:   version,
-	})
-	lex.AddCommand(&cobra.Command{
-		Use:   "compile",
-		Short: "Compiles",
-		RunE:  compile,
-	})
+	comp.Flags().BoolVar(&optimize, "optimize", false, "optimize llvm output -- runs function pass manager")
+	lex.AddCommand(
+		vers,
+		comp,
+	)
 }
 
 func version(_ *cobra.Command, _ []string) {
@@ -56,6 +62,7 @@ func compile(_ *cobra.Command, _ []string) (e error) {
 	}
 
 	c := m.NewCompiler("lex")
+	c.GetCompiler().GetOptions().Optimize = optimize
 	in, out, err := os.Stdin, os.Stdout, os.Stderr
 	repl := NewRepl(c.GetCompiler(), in, out, err)
 	repl.Loop()
@@ -68,6 +75,13 @@ func compile(_ *cobra.Command, _ []string) (e error) {
 
 	// TODO:
 	fType := llvm.AssemblyFile
-	e = c.Write("sample/output.bc", fType)
+	var name string
+	if optimize {
+		name = "output"
+	} else {
+		name = "output-unoptimized"
+	}
+	file := fmt.Sprintf("sample/%s.bc", name)
+	e = c.Write(file, fType)
 	return
 }

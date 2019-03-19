@@ -10,9 +10,14 @@ dir="$( get_dir "${BASH_SOURCE[0]}" )"
 cd "${dir}/.."
 # ./build.sh
 cat "${dir}/average.kl" | bin/lex compile
+cat "${dir}/average.kl" | bin/lex compile --optimize
 
 # create ll files
 cd "${dir}"
+# unoptimized ll
+llvm-dis output-unoptimized.bc -o output-unoptimized.ll
+rm -f output-unoptimized.bc
+#optimized
 llvm-dis output.bc -o output.ll
 llvm-as output.ll -o output.bc
 llc output.bc -filetype=asm

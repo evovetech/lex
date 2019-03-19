@@ -15,9 +15,14 @@ type Module struct {
 	llvm.Module
 }
 
+type Options struct {
+	Optimize bool
+}
+
 type Compiler interface {
 	GetContext() llvm.Context
 	GetModule() llvm.Module
+	GetOptions() *Options
 	Compile(node ast.Node) (llvm.Value, error)
 }
 
@@ -43,6 +48,7 @@ func (ctx *Context) baseCompiler(name string) *compiler {
 	return &compiler{
 		Context:     ctx,
 		module:      ctx.NewModule(name),
+		options:     &Options{},
 		builder:     ctx.NewBuilder(),
 		namedValues: make(map[string]llvm.Value),
 	}
@@ -74,6 +80,7 @@ type compiler struct {
 	*Context
 	builder     llvm.Builder
 	module      *Module
+	options     *Options
 	fpm         llvm.PassManager
 	namedValues map[string]llvm.Value
 }
@@ -84,6 +91,10 @@ func (c *compiler) GetContext() llvm.Context {
 
 func (c *compiler) GetModule() llvm.Module {
 	return c.module.Module
+}
+
+func (c *compiler) GetOptions() *Options {
+	return c.options
 }
 
 func (c *compiler) Compile(node ast.Node) (val llvm.Value, err error) {
@@ -254,7 +265,9 @@ func (c *compiler) compileFunction(e *ast.FunctionExpr) (fn llvm.Value, err erro
 	llvm.VerifyFunction(fn, llvm.PrintMessageAction)
 
 	// optimize the function
-	c.fpm.RunFunc(fn)
+	if c.options.Optimize {
+		c.fpm.RunFunc(fn)
+	}
 	return
 }
 
