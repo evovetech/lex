@@ -1,0 +1,14 @@
+git clone https://github.com/go-nv/goenv.git ~/.goenv
+
+
+_init='''
+export GOENV_ROOT="$HOME/.goenv"
+export PATH="$GOENV_ROOT/bin:$PATH"
+eval "$(goenv init -)"
+export PATH="$GOROOT/bin:$PATH"
+export PATH="$PATH:$GOPATH/bin"
+'''
+echo "${_init}" >> ~/.zshrc
+echo "${_init}" >> ~/.bashrc
+echo "${_init}" >> ~/.bash_profile
+
